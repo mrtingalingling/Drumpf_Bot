@@ -9,10 +9,6 @@ import re
 from collections import defaultdict
 from os.path import join, abspath, dirname, isfile
 import csv
-# import xlrd
-# import matplotlib.pyplot as plt
-# import psycopg2
-
 from twitter import Twitter, OAuth, TwitterHTTPError, TwitterStream
 from tweet_config import CONFIG
 from time import sleep
@@ -37,14 +33,13 @@ def main():
 		tweets = None
 		while True:
 			old_tweets = tweets
-			tweets = get_tweet(t)
-			if tweets != old_tweets:
-				for statement in tweets:
-					print statement
-					updated_text = process_text(statement) 
-					send_tweet(t, updated_text)
-					# To prevent abuse of the twitter API and usage limit, calling it only once a minute.
-			 		sleep(60)
+			tweets = get_tweet(t)[0]
+			if tweets.get('status').get('text') != old_tweets:
+				updated_text = process_text(tweets) 
+				send_tweet(t, updated_text)
+				tweets = tweets.get('status').get('text')
+			# To prevent abuse of the twitter API and usage limit, calling it only once a minute.
+	 		sleep(60)
 
 	except Exception as e:
 		print(e)
@@ -61,36 +56,24 @@ def send_tweet(t, text):
 	if len(text)<=140:
 		#Twitter allows only 140 character tweets
 		print('tweetable')
+
+		# Check the lateast tweet to avoid deplicate
+		my_last_tweet = t.users.search(q='reelDonaldDump', count=1)[0].get('status').get('text')
+		if my_last_tweet == text:
+			return
+
+		text = text.replace('amp;', '')
+
 		t.statuses.update(status=text)
 	else:
 		print('140 characters crossed')
 
 
-# # Extended subclass
-# class wordstr(str):
-# 	d = enchant.Dict("en_US")
-
-#     def antonym(self):    	
-#         if d.check(self):
-#             return self[0] + self[-1]
-
-#     def type(self):
-#     	if d.check(self):
-# 	        return ''
-
-#     def polarity(self):
-#     	if d.check(self):
-# 	        return ''
-
-
-# # Substitute the original str with the subclass on the built-in namespace    
-# __builtin__.str = wordstr
-
-
 def process_text(statement): 
 	text = str(statement['status']['text'].encode("utf-8"))
-	print('Tweet Content: ' + text)
-	handle = str(statement['screen_name'])
+	tweet_time = str(statement['status']['created_at'])
+	print('Tweet Content: ' + text + ' at ' + tweet_time)
+	handle = 'realDonaldTrump'  # str(statement['screen_name'])
 
 	# ###
 	# text_ls = text.split('')
@@ -114,7 +97,7 @@ def process_text(statement):
 
 
 if __name__ == '__main__':
- main()
+	main()
 
 
 # Reference: 
@@ -122,6 +105,3 @@ if __name__ == '__main__':
 # https://github.com/ckoepp/TwitterSearch/blob/master/TwitterSearch/TwitterUserOrder.py
 # https://github.com/ideoforms/python-twitter-examples/blob/master/twitter-user-search.py
 # http://stackoverflow.com/questions/4698493/can-i-add-custom-methods-attributes-to-built-in-python-types
-# http://stackoverflow.com/questions/21395011/python-module-with-access-to-english-dictionaries-including-definitions-of-words
-# https://github.com/geekpradd/PyDictionary
-# http://stackoverflow.com/questions/3788870/how-to-check-if-a-word-is-an-english-word-with-python
