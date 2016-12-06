@@ -12,7 +12,7 @@ import csv
 from twitter import Twitter, OAuth, TwitterHTTPError, TwitterStream
 from tweet_config import CONFIG
 from time import sleep
-import __builtin__
+from wordict import info
 
 
 def main():
@@ -36,7 +36,8 @@ def main():
 			tweets = get_tweet(t)[0]
 			if tweets.get('status').get('text') != old_tweets:
 				updated_text = process_text(tweets) 
-				send_tweet(t, updated_text)
+				if updated_text is not None: 
+					send_tweet(t, updated_text)
 				tweets = tweets.get('status').get('text')
 			# To prevent abuse of the twitter API and usage limit, calling it only once a minute.
 	 		sleep(60)
@@ -76,16 +77,20 @@ def process_text(statement):
 	handle = 'realDonaldTrump'  # str(statement['screen_name'])
 
 	# ###
-	# text_ls = text.split('')
-	# for idx, word in text_ls: 
-	# 	# Check word meaning from dictionary
+	try: 
+		text_ls = text.split('')
+	except Exception as e: 
+		print e
+		return
 
-	# 	# Check if phrase/name
-	# 	if text_ls(idx).type == text_ls(idx + 1).type: 
-	# 		print 'They are the same word type'
-	# 	elif text_ls(word_index).type == 'adj':
-	# 		text.replace(text_ls(idx), text_ls(word_index).antonym)
-
+	for idx, word in text_ls: 
+		# Check if phrase/name
+		# if text_ls(idx).type == text_ls(idx + 1).type: 
+		# 	print 'They are the same word type'
+		# elif text_ls(word_index).type == 'adj':
+		wd = info(word)
+		if wd[0] == 'adjective':
+			text.replace(word, wd[1])
 
 	if len(text) + len(handle) + 1 < 140: 
 		updated_text = '@' + handle + ' ' + text
