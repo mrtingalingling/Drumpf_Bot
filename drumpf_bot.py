@@ -12,7 +12,7 @@ import csv
 from twitter import Twitter, OAuth, TwitterHTTPError, TwitterStream
 from tweet_config import CONFIG
 from time import sleep
-from wordict import info
+from wordict import define_word
 
 
 def main():
@@ -59,9 +59,13 @@ def send_tweet(t, text):
 		print('tweetable')
 
 		# Check the lateast tweet to avoid deplicate
-		my_last_tweet = t.users.search(q='reelDonaldDump', count=1)[0].get('status').get('text')
-		if my_last_tweet == text:
-			return
+		try:
+			my_last_tweet = t.users.search(q='reelDonaldDump', count=1)[0].get('status').get('text')
+			if my_last_tweet == text:
+				print('Content has been tweeted previously, tweet passed.')
+				return
+		except Exception as e: 
+			print e
 
 		text = text.replace('amp;', '')
 
@@ -76,27 +80,40 @@ def process_text(statement):
 	print('Tweet Content: ' + text + ' at ' + tweet_time)
 	handle = 'realDonaldTrump'  # str(statement['screen_name'])
 
-	# ###
+	# Examine the meaning of the tweet 
+	# Split the tweet into list of words separeted by space 
 	try: 
-		text_ls = text.split('')
+		updated_text = text.split('....cont')[0]
+		text_ls = updated_text.split()
+
+		# For each word and its respective position in the tweet 
+		for word in text_ls: 
+			# if 'adjective' in word_lookup.define_word(word).pos:
+			# 	text.replace(word, word_lookup.define_word(word).atns[0])
+			specific_word = False 	
+			for letter in list(word): 
+				if letter.isupper(): 
+					specific_word = True 
+
+			if define_word(word) and not specific_word: 
+				print word, define_word(word)
+				updated_text = updated_text.replace(word, define_word(word))
+
 	except Exception as e: 
 		print e
 		return
 
-	for idx, word in text_ls: 
-		# Check if phrase/name
-		# if text_ls(idx).type == text_ls(idx + 1).type: 
-		# 	print 'They are the same word type'
-		# elif text_ls(word_index).type == 'adj':
-		wd = info(word)
-		if wd[0] == 'adjective':
-			text.replace(word, wd[1])
+	print('Proposed Tweet Content: ' + updated_text)
+	print('Proposed Tweet Length: ' + str(len(updated_text)))
 
-	if len(text) + len(handle) + 1 < 140: 
-		updated_text = '@' + handle + ' ' + text
+	if len(updated_text) + len(handle) + 1 < 140: 
+		updated_text = '@' + handle + ' ' + updated_text
+		print('Tagged original handler.')
+	elif len(updated_text) < 140: 
+		pass
 	else:
-		updated_text = text
-	print('Updated Tweet Content: ' + updated_text)
+		return
+		# updated_text = text
 
 	return updated_text 
 
@@ -110,3 +127,4 @@ if __name__ == '__main__':
 # https://github.com/ckoepp/TwitterSearch/blob/master/TwitterSearch/TwitterUserOrder.py
 # https://github.com/ideoforms/python-twitter-examples/blob/master/twitter-user-search.py
 # http://stackoverflow.com/questions/4698493/can-i-add-custom-methods-attributes-to-built-in-python-types
+# http://stackoverflow.com/questions/17140408/if-statement-to-check-whether-a-string-has-a-capital-letter-a-lower-case-letter
