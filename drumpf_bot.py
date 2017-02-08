@@ -10,12 +10,14 @@ from collections import defaultdict
 from os.path import join, abspath, dirname, isfile
 import csv
 from twitter import Twitter, OAuth, TwitterHTTPError, TwitterStream
-from tweet_config import CONFIG
+from argparse import ArgumentParser
+# from tweet_config import CONFIG
+import imp
 from time import sleep
 from wordict import define_word
 
 
-def main():
+def main(CONFIG):
 	try:
 		OAUTH_TOKEN = CONFIG.get('OAUTH_TOKEN')
 		OAUTH_SECRET = CONFIG.get('OAUTH_SECRET')
@@ -40,7 +42,7 @@ def main():
 					send_tweet(t, updated_text)
 				tweets = tweets.get('status').get('text')
 			# To prevent abuse of the twitter API and usage limit, calling it only once a minute.
-	 		sleep(60)
+			sleep(60)
 
 	except Exception as e:
 		print(e)
@@ -65,7 +67,7 @@ def send_tweet(t, text):
 				print('Content has been tweeted previously, tweet passed.')
 				return
 		except Exception as e: 
-			print e
+			print(e)
 
 		text = text.replace('amp;', '')
 
@@ -90,7 +92,7 @@ def process_text(statement):
 		for word in text_ls: 
 			# if 'adjective' in word_lookup.define_word(word).pos:
 			# 	text.replace(word, word_lookup.define_word(word).atns[0])
-			specific_word = False 	
+			specific_word = False 
 			for letter in list(word): 
 				if letter.isupper(): 
 					specific_word = True 
@@ -119,7 +121,16 @@ def process_text(statement):
 
 
 if __name__ == '__main__':
-	main()
+	parser = ArgumentParser()
+	parser.add_argument('--filepath', required=True, help="Config file path.")
+	args, trash = parser.parse_known_args()
+
+	try: 
+		tweet_config = imp.load_source('CONFIG', args.filepath)
+	except Exception as e: 
+		print 'No CONFIG file found'
+
+	main(tweet_config.CONFIG)
 
 
 # Reference: 
