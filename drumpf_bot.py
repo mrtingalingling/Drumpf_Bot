@@ -36,11 +36,12 @@ def main(CONFIG):
 		while True:
 			old_tweets = tweets
 			tweets = get_tweet(t)[0]
+			print 'Latest tweet: ' + tweets.get('status').get('text')
 			if tweets.get('status').get('text') != old_tweets:
 				updated_text = process_text(tweets) 
 				if updated_text is not None: 
 					send_tweet(t, updated_text)
-				tweets = tweets.get('status').get('text')
+			tweets = tweets.get('status').get('text')
 			# To prevent abuse of the twitter API and usage limit, calling it only once a minute.
 			sleep(60)
 
@@ -71,7 +72,12 @@ def send_tweet(t, text):
 
 		text = text.replace('amp;', '')
 
-		t.statuses.update(status=text)
+		try: 
+			t.statuses.update(status=text)
+		except Exception as e: 
+			# print e 
+			print 'This is most likely due to deplicate.'
+
 	else:
 		print('140 characters crossed')
 
@@ -79,7 +85,7 @@ def send_tweet(t, text):
 def process_text(statement): 
 	text = str(statement['status']['text'].encode("utf-8"))
 	tweet_time = str(statement['status']['created_at'])
-	print('Tweet Content: ' + text + ' at ' + tweet_time)
+	print('Original Content: ' + text + ' at ' + tweet_time)
 	handle = 'realDonaldTrump'  # str(statement['screen_name'])
 
 	# Examine the meaning of the tweet 
